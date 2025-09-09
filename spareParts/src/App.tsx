@@ -2,7 +2,6 @@ import { Routes, Route, Link } from "react-router-dom";
 import Home from "./home";
 import Management from "./Management";
 import Database from "./database";
-import Adicionar from "./adicionar";
 import AdicionarColaborador from "./adicionarColaborador";
 import ListarColaboradores from "./ListarColaboradores";
 import EditarColaborador from "./EditarColaborador";
@@ -39,7 +38,6 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/Management" element={<Management />} />
           <Route path="/database" element={<Database />} />
-          <Route path="/adicionar" element={<Adicionar />} />
           <Route path="/adicionarColaborador" element={<AdicionarColaborador />} />
           <Route path="/listar-colaboradores" element={<ListarColaboradores />} />
           <Route path="/editar-colaborador/:id" element={<EditarColaborador />} />

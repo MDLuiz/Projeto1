@@ -1,104 +1,75 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Sample {
-  id: number;
-  utilidade: string;
-  modelo: string;
   imei: string;
   plm: string;
+  modelo: string;
+  utilidade: string;
 }
 
 function AdicionarSample() {
-  const [utilidade, setUtilidade] = useState("DMF"); // padrão para DMF
-  const [modelo, setModelo] = useState("");
+  const navigate = useNavigate();
+
   const [imei, setImei] = useState("");
   const [plm, setPlm] = useState("");
+  const [modelo, setModelo] = useState("");
+  const [utilidade, setUtilidade] = useState("");
+  const [erro, setErro] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (imei.length !== 15) {
-      alert("IMEI deve ter exatamente 15 caracteres.");
+    const imeiTrimmed = imei.trim();
+    const plmTrimmed = plm.trim();
+
+    if (imeiTrimmed.length !== 15 || plmTrimmed.length !== 15) {
+      setErro("IMEI e PLM devem ter exatamente 15 caracteres.");
       return;
     }
 
-    if (plm.length !== 15) {
-      alert("PLM deve ter exatamente 15 caracteres.");
+    if (!modelo.trim() || !utilidade) {
+      setErro("Preencha todos os campos obrigatórios.");
       return;
     }
 
-    if (!modelo.trim()) {
-      alert("Preencha todos os campos.");
+    if (imeiTrimmed === plmTrimmed) {
+      setErro("IMEI e PLM não podem ser iguais.");
       return;
     }
 
-    // Pega lista atual do localStorage
-    const dados = localStorage.getItem("samples");
-    const samples: Sample[] = dados ? JSON.parse(dados) : [];
+    const samples: Sample[] = JSON.parse(localStorage.getItem("samples") || "[]");
 
-    // Verifica duplicidade de IMEI ou PLM
-    const imeiDuplicado = samples.some(sample => sample.imei === imei);
-    if (imeiDuplicado) {
-      alert("Já existe um sample com esse IMEI cadastrado.");
+    const imeiExistente = samples.some(s => s.imei === imeiTrimmed || s.plm === imeiTrimmed);
+    const plmExistente = samples.some(s => s.imei === plmTrimmed || s.plm === plmTrimmed);
+
+    if (imeiExistente || plmExistente) {
+      setErro("IMEI ou PLM já cadastrado.");
       return;
     }
-
-    const plmDuplicado = samples.some(sample => sample.plm === plm);
-    if (plmDuplicado) {
-      alert("Já existe um sample com esse PLM cadastrado.");
-      return;
-    }
-
-    // Gera id único simples
-    const novoId = samples.length > 0 ? samples[samples.length - 1].id + 1 : 1;
 
     const novoSample: Sample = {
-      id: novoId,
+      imei: imeiTrimmed,
+      plm: plmTrimmed,
+      modelo: modelo.trim(),
       utilidade,
-      modelo,
-      imei,
-      plm,
     };
 
     samples.push(novoSample);
     localStorage.setItem("samples", JSON.stringify(samples));
 
-    alert("Sample adicionado com sucesso!");
-
-    setUtilidade("DMF");
-    setModelo("");
-    setImei("");
-    setPlm("");
+    alert("Sample cadastrado com sucesso!");
+    navigate("/"); // ajuste conforme sua rota
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif", maxWidth: 500 }}>
-      <h1>Adicionar Sample</h1>
+    <div style={{ padding: "20px", maxWidth: "500px", margin: "0 auto" }}>
+      <h2>Adicionar Sample</h2>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "15px" }}>
-          <label>Utilidade:</label>
-          <select
-            value={utilidade}
-            onChange={(e) => setUtilidade(e.target.value)}
-            style={{ width: "100%", padding: "8px" }}
-          >
-            <option value="DMF">DMF</option>
-            <option value="MFM">MFM</option>
-            <option value="Padrão">Padrão</option>
-          </select>
-        </div>
-
-        <div style={{ marginBottom: "15px" }}>
-          <label>Modelo:</label>
-          <input
-            type="text"
-            value={modelo}
-            onChange={(e) => setModelo(e.target.value)}
-            required
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
+        {erro && (
+          <div style={{ color: "red", marginBottom: "10px" }}>{erro}</div>
+        )}
 
         <div style={{ marginBottom: "15px" }}>
           <label>IMEI (15 caracteres):</label>
@@ -124,11 +95,37 @@ function AdicionarSample() {
           />
         </div>
 
+        <div style={{ marginBottom: "15px" }}>
+          <label>Modelo:</label>
+          <input
+            type="text"
+            value={modelo}
+            onChange={(e) => setModelo(e.target.value)}
+            required
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "15px" }}>
+          <label>Utilidade:</label>
+          <select
+            value={utilidade}
+            onChange={(e) => setUtilidade(e.target.value)}
+            required
+            style={{ width: "100%", padding: "8px" }}
+          >
+            <option value="">Selecione</option>
+            <option value="DMF">DMF</option>
+            <option value="MFM">MFM</option>
+            <option value="Padrão">Padrão</option>
+          </select>
+        </div>
+
         <button
           type="submit"
           style={{
             padding: "10px 20px",
-            backgroundColor: "#007bff",
+            backgroundColor: "#28a745",
             color: "#fff",
             border: "none",
             borderRadius: "4px",
