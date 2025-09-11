@@ -8,13 +8,15 @@ interface Colaborador {
 interface Sample {
   imei: string;
   plm: string;
+  partNumber: string;
   modelo: string;
   utilidade: string;
+  maquina?: string;
 }
 
 interface HistoricoMovimentacao {
   tipo: "entrada" | "saida";
-  plm: string;
+  partNumber: string;
   colaborador: string;
   data: string; // ISO format
 }
@@ -25,7 +27,7 @@ function Management() {
   const [matriculaColaborador, setMatriculaColaborador] = useState<string>("");
   const [nomeColaborador, setNomeColaborador] = useState<string>("");
 
-  const [plm, setPlm] = useState<string>("");
+  const [partNumber, setPartNumber] = useState<string>("");
   const [modeloSample, setModeloSample] = useState<string>("");
   const [utilidadeSample, setUtilidadeSample] = useState<string>("");
 
@@ -33,6 +35,7 @@ function Management() {
   const colaboradores: Colaborador[] = JSON.parse(localStorage.getItem("colaboradores") || "[]");
   const samples: Sample[] = JSON.parse(localStorage.getItem("samples") || "[]");
 
+  // Atualiza nome do colaborador com base na matrícula
   useEffect(() => {
     const colaborador = colaboradores.find(c =>
       c.matricula.trim().toLowerCase() === matriculaColaborador.trim().toLowerCase()
@@ -40,18 +43,25 @@ function Management() {
     setNomeColaborador(colaborador ? colaborador.nome : "");
   }, [matriculaColaborador, colaboradores]);
 
+  // Atualiza modelo e utilidade com base no partNumber
   useEffect(() => {
     const sampleInfo = samples.find(s =>
-      s.plm.trim().toLowerCase() === plm.trim().toLowerCase()
+      s.partNumber.trim().toLowerCase() === partNumber.trim().toLowerCase()
     );
+
     if (sampleInfo) {
       setModeloSample(sampleInfo.modelo);
-      setUtilidadeSample(sampleInfo.utilidade);
+
+      if (sampleInfo.utilidade === "Padrão" && sampleInfo.maquina) {
+        setUtilidadeSample(`Padrão - ${sampleInfo.maquina}`);
+      } else {
+        setUtilidadeSample(sampleInfo.utilidade);
+      }
     } else {
       setModeloSample("");
       setUtilidadeSample("");
     }
-  }, [plm, samples]);
+  }, [partNumber, samples]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,23 +72,22 @@ function Management() {
     }
 
     if (!modeloSample) {
-      alert("PLM inválido ou não encontrado.");
+      alert("PartNumber inválido ou não encontrado.");
       return;
     }
 
     const historico: HistoricoMovimentacao[] = JSON.parse(localStorage.getItem("historicoMovimentacoes") || "[]");
 
-    const ultimaMovimentacao = [...historico].reverse().find(m => m.plm === plm);
-
+    const ultimaMovimentacao = [...historico].reverse().find(m => m.partNumber === partNumber);
 
     if (tipoMovimentacao === "saida" && ultimaMovimentacao?.tipo === "saida") {
-      alert("Este PLM já está em uso (saída registrada sem entrada).");
+      alert("Este PartNumber já está em uso (saída registrada sem entrada).");
       return;
     }
 
     const novaMovimentacao: HistoricoMovimentacao = {
       tipo: tipoMovimentacao,
-      plm: plm,
+      partNumber: partNumber,
       colaborador: nomeColaborador,
       data: new Date().toISOString(),
     };
@@ -86,13 +95,13 @@ function Management() {
     const novoHistorico = [...historico, novaMovimentacao];
     localStorage.setItem("historicoMovimentacoes", JSON.stringify(novoHistorico));
 
-    alert(`Registrado: ${tipoMovimentacao} de PLM "${plm}" (${modeloSample}) por ${nomeColaborador} (${matriculaColaborador})`);
+    alert(`Registrado: ${tipoMovimentacao} de PartNumber "${partNumber}" (${modeloSample}) por ${nomeColaborador} (${matriculaColaborador})`);
 
     // Reset
     setTipoMovimentacao("entrada");
     setMatriculaColaborador("");
     setNomeColaborador("");
-    setPlm("");
+    setPartNumber("");
     setModeloSample("");
     setUtilidadeSample("");
   };
@@ -148,15 +157,14 @@ function Management() {
             {/* Coluna direita */}
             <div style={{ flex: "1 1 45%" }}>
               <div style={{ marginBottom: "15px" }}>
-                <label>PLM (15 caracteres):</label>
+                <label>PartNumber:</label>
                 <input
                   type="text"
-                  value={plm}
-                  onChange={(e) => setPlm(e.target.value)}
-                  placeholder="Ex: ABC123456789012"
+                  value={partNumber}
+                  onChange={(e) => setPartNumber(e.target.value)}
+                  placeholder="Digite o PartNumber"
                   style={{ width: "100%", padding: "8px" }}
                   required
-                  maxLength={15}
                 />
               </div>
 

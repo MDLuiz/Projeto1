@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 interface Sample {
   imei: string;
   plm: string;
+  partNumber: string;
   modelo: string;
   utilidade: string;
+  maquina?: string;
 }
 
 function AdicionarSample() {
@@ -13,8 +15,10 @@ function AdicionarSample() {
 
   const [imei, setImei] = useState("");
   const [plm, setPlm] = useState("");
+  const [partNumber, setPartNumber] = useState("");
   const [modelo, setModelo] = useState("");
   const [utilidade, setUtilidade] = useState("");
+  const [maquina, setMaquina] = useState("");
   const [erro, setErro] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -22,14 +26,25 @@ function AdicionarSample() {
 
     const imeiTrimmed = imei.trim();
     const plmTrimmed = plm.trim();
+    const partNumberTrimmed = partNumber.trim();
 
-    if (imeiTrimmed.length !== 15 || plmTrimmed.length !== 15) {
-      setErro("IMEI e PLM devem ter exatamente 15 caracteres.");
+    if (imeiTrimmed.length !== 15 || plmTrimmed.length !== 11) {
+      setErro("IMEI deve ter 15 caracteres e PLM deve ter 11 caracteres.");
+      return;
+    }
+
+    if (!partNumberTrimmed) {
+      setErro("PartNumber é obrigatório.");
       return;
     }
 
     if (!modelo.trim() || !utilidade) {
       setErro("Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    if (utilidade === "Padrão" && !maquina) {
+      setErro("Selecione uma máquina para a utilidade Padrão.");
       return;
     }
 
@@ -40,26 +55,35 @@ function AdicionarSample() {
 
     const samples: Sample[] = JSON.parse(localStorage.getItem("samples") || "[]");
 
-    const imeiExistente = samples.some(s => s.imei === imeiTrimmed || s.plm === imeiTrimmed);
-    const plmExistente = samples.some(s => s.imei === plmTrimmed || s.plm === plmTrimmed);
+    const imeiExistente = samples.some(s =>
+      s.imei === imeiTrimmed || s.plm === imeiTrimmed || s.partNumber === imeiTrimmed
+    );
+    const plmExistente = samples.some(s =>
+      s.imei === plmTrimmed || s.plm === plmTrimmed || s.partNumber === plmTrimmed
+    );
+    const partNumberExistente = samples.some(s =>
+      s.partNumber === partNumberTrimmed || s.imei === partNumberTrimmed || s.plm === partNumberTrimmed
+    );
 
-    if (imeiExistente || plmExistente) {
-      setErro("IMEI ou PLM já cadastrado.");
+    if (imeiExistente || plmExistente || partNumberExistente) {
+      setErro("IMEI, PLM ou PartNumber já cadastrado.");
       return;
     }
 
     const novoSample: Sample = {
       imei: imeiTrimmed,
       plm: plmTrimmed,
+      partNumber: partNumberTrimmed,
       modelo: modelo.trim(),
       utilidade,
+      maquina: utilidade === "Padrão" ? maquina : undefined,
     };
 
     samples.push(novoSample);
     localStorage.setItem("samples", JSON.stringify(samples));
 
     alert("Sample cadastrado com sucesso!");
-    navigate("/"); // ajuste conforme sua rota
+    navigate("/home");
   };
 
   return (
@@ -84,12 +108,23 @@ function AdicionarSample() {
         </div>
 
         <div style={{ marginBottom: "15px" }}>
-          <label>PLM (15 caracteres):</label>
+          <label>PLM (11 caracteres):</label>
           <input
             type="text"
             value={plm}
             onChange={(e) => setPlm(e.target.value)}
-            maxLength={15}
+            maxLength={11}
+            required
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "15px" }}>
+          <label>PartNumber:</label>
+          <input
+            type="text"
+            value={partNumber}
+            onChange={(e) => setPartNumber(e.target.value)}
             required
             style={{ width: "100%", padding: "8px" }}
           />
@@ -110,7 +145,10 @@ function AdicionarSample() {
           <label>Utilidade:</label>
           <select
             value={utilidade}
-            onChange={(e) => setUtilidade(e.target.value)}
+            onChange={(e) => {
+              setUtilidade(e.target.value);
+              setMaquina(""); // limpa a máquina se trocar
+            }}
             required
             style={{ width: "100%", padding: "8px" }}
           >
@@ -120,6 +158,25 @@ function AdicionarSample() {
             <option value="Padrão">Padrão</option>
           </select>
         </div>
+
+        {utilidade === "Padrão" && (
+          <div style={{ marginBottom: "15px" }}>
+            <label>Máquina:</label>
+            <select
+              value={maquina}
+              onChange={(e) => setMaquina(e.target.value)}
+              required
+              style={{ width: "100%", padding: "8px" }}
+            >
+              <option value="">Selecione a máquina</option>
+              <option value="Calibração">Calibração</option>
+              <option value="LCIA">LCIA</option>
+              <option value="Radiação">Radiação</option>
+              <option value="Camera">Camera</option>
+              <option value="IMEI">IMEI</option>
+            </select>
+          </div>
+        )}
 
         <button
           type="submit"
